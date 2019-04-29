@@ -70,7 +70,7 @@ from utils import give_me_raw_html_content
 
 def give_me_page_title(fname):
     html_content = give_me_raw_html_content(fname)
-    soup         = BeautifulSoup(html_content)
+    soup         = BeautifulSoup(html_content, "lxml")
     page_title   = soup.title.string
     # print("title is ", page_title)
     page_title = do_interesting_string_processing(page_title)
