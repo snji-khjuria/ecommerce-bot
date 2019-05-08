@@ -1,4 +1,4 @@
-from titles_utils import give_me_page_titles_json, give_me_page_title
+from titles_utils import give_me_page_title
 from table_extractor import give_me_page_tables
 from normalizers.normalizer_util import normalize_tuples
 import json
