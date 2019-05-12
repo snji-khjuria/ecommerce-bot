@@ -7,7 +7,7 @@ import sys
 page_loc = sys.argv[1]
 # page_loc = '/home/maulik/Desktop/textDetection/text-detection-ctpn/main/data/diffbot_dataset/table_pages/pages/hs0.html'
 # titles_json = give_me_page_titles_json(page_loc)
-page_titles = give_me_page_title(page_loc)
+page_titles = [give_me_page_title(page_loc)]
 tables = give_me_page_tables(page_loc)
 normalized_tables = normalize_tuples(tables)
 # print("titles json is ", titles_json)

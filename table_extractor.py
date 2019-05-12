@@ -422,12 +422,13 @@ def give_me_kv_patterns(raw_html, table_patterns):
         sp, ep = p
         # if p!=('<td class="attrLabels">', '</td>'):
         #     continue
-        # print("pattern is ", p)
         # print("calling with pattern ", sp, " and ", ep)
         pattern_locs = find_all_pattern_locs(raw_html, sp)
-        if len(pattern_locs)>100:
+        # if p==('<th class="col label" scope="row">', '</th>'):
+        #     print('Found the pattern')
+        #     print(len(pattern_locs))
+        if len(pattern_locs)>200:
             continue
-        # print("pattern locs are ", len(pattern_locs))
         rem_patterns = table_patterns[:i] + table_patterns[i+1:]
         # print("rem patterns are ", rem_patterns)
         # rem_patterns = table_patterns
@@ -508,20 +509,28 @@ def give_me_filtered_patterns(output_tables):
     # print("Filtered patterns are ", filtered_patterns)
     # tuples = []
     return filtered_patterns
-
+from table_filters import pattern_with_link
 def give_me_table_content_from_patterns(filtered_patterns, raw_html):
     output = []
     for pattern in filtered_patterns:
-        # print("pattern is ")
-        # print(pattern)
+        # print("Pattern is ", pattern)
+        if pattern_with_link(pattern):
+            continue
         key_pattern, value_pattern = pattern
+        # print("Key pattern is ")
+        # print(key_pattern)
+        # print("Value pattern is ")
+        # print(value_pattern)
         complete_table_content = give_me_complete_table_answer(raw_html, key_pattern, value_pattern)
+        # print("complete table content is ", len(complete_table_content))
         complete_table_content = filter_table_rows(complete_table_content)
+        # print("complete table content is ", len(complete_table_content))
         complete_table_content = modify_table_keys(complete_table_content)
         complete_table_content = set(complete_table_content)
         if not istable(complete_table_content):
             continue
         complete_table_content = remove_html_from_tuples(complete_table_content)
+        # print("table is ", complete_table_content)
         output.extend(complete_table_content)
         # table = "\n".join([k+"\t"+v for k, v in complete_table_content])
         # print("table is ")
@@ -557,11 +566,14 @@ def give_me_table_content_colon_from_patterns(filtered_patterns, raw_html):
         complete_table_content = set(complete_table_content)
         # print("Complete table content is ")
         # print(complete_table_content)
+        # print("Insides pattern")
+        # print(inside_patterns)
         if not istable_with_colon(complete_table_content, inside_patterns, inside_patterns_set):
             continue
         # print("yoyo")
         complete_table_content = modify_table_keys(complete_table_content)
         complete_table_content = remove_html_from_tuples(complete_table_content)
+        # print("Complete table is ", complete_table_content)
         output.extend(complete_table_content)
         # table = "\n".join([k+"\t"+v for k, v in complete_table_content])
         # print("table is ")
@@ -574,6 +586,9 @@ def give_me_table_content_colon_from_patterns(filtered_patterns, raw_html):
 
 def give_me_page_tables(page_loc):
     words_to_replace = give_me_keys(page_loc)
+    # print("words to replace are ")
+    # print(words_to_replace)
+    # print("data-th" in words_to_replace)
     html_content = give_me_my_html_content(page_loc)
     html_content = give_me_modified_content(words_to_replace, html_content)
     soup = BeautifulSoup(html_content, "lxml")
@@ -615,13 +630,20 @@ def give_me_page_tables(page_loc):
     filtered_patterns = give_me_filtered_patterns(output_tables)
     # print("patterns are ", filtered_patterns)
     output = give_me_table_content_from_patterns(filtered_patterns, raw_html)
+    # print("paterns were ", filtered_patterns)
+    # print("output is ", output)
     # print("output is ", output)
         # print("Boom")
     # tuples = set(tuples)
+    # print("Output present is ")
+    # print(output)
     some_patterns = give_me_some_patterns(raw_html, table_patterns)
+    # print("some patterns are ", some_patterns)
     filtered_patterns = give_me_filtered_patterns(some_patterns)
+    # print("Filtered patterns are ", filtered_patterns)
     # print("Some patterns are ", filtered_patterns)
     some_table_output = give_me_table_content_colon_from_patterns(filtered_patterns, raw_html)
+    # print("Some table output is ", some_table_output)
     if len(some_table_output)>0:
         output.extend(some_table_output)
     # if len(some_table_output)!=0:
@@ -633,7 +655,7 @@ def give_me_page_tables(page_loc):
 
 
 def filter_table_rows(complete_table_content):
-    return [(k, v) for k, v in complete_table_content if len(v)>0 and len(k)>0 and len(v.split())<10]
+    return [(k, v) for k, v in complete_table_content if len(v)>0 and len(k)>0 and len(v)<200]
 def modify_table_keys(complete_table_content):
     output = []
     for k, v in complete_table_content:
@@ -648,23 +670,40 @@ def modify_table_keys(complete_table_content):
 
 from table_filters import is_table_row
 def istable_with_colon(complete_table_content, inside_patterns, inside_patterns_set):
+    # print("Complete table content", complete_table_content)
     # print("table row is ", inside_patterns_set)
-    if abs(len(inside_patterns_set)-len(inside_patterns))>=1 and is_table_row(list(inside_patterns_set)[0]):
+    pattern_dict = {}
+    for p in inside_patterns:
+        pattern_dict[p]=1+pattern_dict.get(p, 0)
+    # print("patterns dictionary is ", pattern_dict)
+    pattern_dict = [k for k, v in pattern_dict.items() if v>1]
+    if abs(len(inside_patterns_set)-len(inside_patterns))>=1 and is_table_row(pattern_dict[0]):
         return True
+    # print("I returned false")
     if len(complete_table_content)<2:
         return False
-    start_value = set([v[0] for k, v in complete_table_content if len(v)>0])
-    end_key = set([k[-1] for k, v in complete_table_content if len(k)>0])
-    if ':' in start_value or ':' in end_key:
+    start_values = [v[0] for k, v in complete_table_content if len(v)>0]
+    start_d = {}
+    for item in start_values:
+        start_d[item] = start_d.get(item, 0) + 1
+    end_d = {}
+    end_values = [k[-1] for k, v in complete_table_content if len(k) > 0]
+    for item in end_values:
+        end_d[item] = end_d.get(item, 0) + 1
+    if (':' in start_d and start_d[':']>2) or (':' in end_d and end_d[':']>2):
+        # print("I am returning true")
         return True
     return False
 
 def istable(complete_table_content):
+    # print("table is ", complete_table_content)
     if len(complete_table_content)<2:
         return False
     last_char_value_list = set([v[-1] for k, v in complete_table_content])
     # last_char_key_list = set([k[-1] for k, v in complete_table_content])
     max_key_value = max([len(k) for k, v in complete_table_content])
-    if len(last_char_value_list)<=1 or max_key_value<4 or len(complete_table_content)<2:
+    min_number_words_in_key = min([len(k.split()) for k, v in complete_table_content])
+    if len(last_char_value_list)<=1 or max_key_value<4 or len(complete_table_content)<2 or min_number_words_in_key>5:
         return False
     return True
+
