@@ -4,7 +4,13 @@ from normalizers.normalizer_util import normalize_tuples
 import json
 # page_loc  = '/home/maulik/Desktop/textDetection/text-detection-ctpn/main/data/diffbot_dataset/table_pages/pages/alibaba0.html'
 import sys
-page_loc = sys.argv[1]
+link = sys.argv[1]
+import requests
+f = requests.get(link)
+content = f.text
+page_loc = './tmp.html'
+with open(page_loc, 'w') as f:
+    f.write(content)
 # page_loc = '/home/maulik/Desktop/textDetection/text-detection-ctpn/main/data/diffbot_dataset/table_pages/pages/hs0.html'
 # titles_json = give_me_page_titles_json(page_loc)
 page_titles = [give_me_page_title(page_loc)]
